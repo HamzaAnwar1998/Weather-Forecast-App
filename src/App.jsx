@@ -8,18 +8,15 @@ import { droplet } from "react-icons-kit/feather/droplet";
 import { wind } from "react-icons-kit/feather/wind";
 import { activity } from "react-icons-kit/feather/activity";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  get5DaysForecast,
-  getCityData,
-} from "./Store/Slices/Weather/WeatherSlice";
+import { get5DaysForecast, getCityData } from "./Store/Slices/WeatherSlice.js";
 import { SphereSpinner } from "react-spinners-kit";
 
 function App() {
   // redux state
   const {
-    citySearchLoader,
+    citySearchLoading,
     citySearchData,
-    forecastLoader,
+    forecastLoading,
     forecastData,
     forecastError,
   } = useSelector((state) => state.weather);
@@ -27,18 +24,20 @@ function App() {
   // main loadings state
   const [loadings, setLoadings] = useState(true);
 
-  // checking if any redux loading is still true and update setLoadings
-  const allLoadings = [citySearchLoader, forecastLoader];
+  // check if any of redux loading state is still true
+  const allLoadings = [citySearchLoading, forecastLoading];
   useEffect(() => {
     const isAnyChildLoading = allLoadings.some((state) => state);
     setLoadings(isAnyChildLoading);
   }, [allLoadings]);
 
-  // states
-  const [city, setCity] = useState("Islamabad");
-  const [unit, setUnit] = useState("metric"); // metric or imperial
+  // city state
+  const [city, setCity] = useState("Karachi");
 
-  // toggle switch
+  // unit state
+  const [unit, setUnit] = useState("metric"); // metric = C and imperial = F
+
+  // toggle unit
   const toggleUnit = () => {
     setLoadings(true);
     setUnit(unit === "metric" ? "imperial" : "metric");
@@ -49,7 +48,12 @@ function App() {
 
   // fetch data
   const fetchData = () => {
-    dispatch(getCityData({ city, unit })).then((res) => {
+    dispatch(
+      getCityData({
+        city,
+        unit,
+      })
+    ).then((res) => {
       if (!res.payload.error) {
         dispatch(
           get5DaysForecast({
@@ -62,30 +66,29 @@ function App() {
     });
   };
 
-  // fetch data on initial render
+  // initial render
   useEffect(() => {
     fetchData();
   }, [unit]);
 
-  // fetch data on city search
+  // handle city search
   const handleCitySearch = (e) => {
     e.preventDefault();
     setLoadings(true);
     fetchData();
   };
 
-  // Function to filter the forecast data based on the time from the first object
-  const filterForecastByFirstObjectTime = (forecastData) => {
+  // function to filter forecast data based on the time of the first object
+  const filterForecastByFirstObjTime = (forecastData) => {
     if (!forecastData) {
       return [];
     }
 
-    const firstObjectTime = forecastData[0].dt_txt.split(" ")[1];
-
-    return forecastData.filter((data) => data.dt_txt.endsWith(firstObjectTime));
+    const firstObjTime = forecastData[0].dt_txt.split(" ")[1];
+    return forecastData.filter((data) => data.dt_txt.endsWith(firstObjTime));
   };
 
-  const filteredForecasts = filterForecastByFirstObjectTime(forecastData?.list);
+  const filteredForecast = filterForecastByFirstObjTime(forecastData?.list);
 
   return (
     <div className="background">
@@ -107,7 +110,7 @@ function App() {
           <button type="submit">GO</button>
         </form>
 
-        {/* current-weather-details-box */}
+        {/* current weather details box */}
         <div className="current-weather-details-box">
           {/* header */}
           <div className="details-box-header">
@@ -123,26 +126,21 @@ function App() {
               <span className="f">F</span>
             </div>
           </div>
-
           {loadings ? (
-            // loader
             <div className="loader">
-              <SphereSpinner color="#2fa5ed" size={20} loading={loadings} />
+              <SphereSpinner loadings={loadings} color="#2fa5ed" size={20} />
             </div>
           ) : (
             <>
               {citySearchData && citySearchData.error ? (
-                // city search error
                 <div className="error-msg">{citySearchData.error}</div>
               ) : (
                 <>
                   {forecastError ? (
-                    // forecast error
                     <div className="error-msg">{forecastError}</div>
                   ) : (
                     <>
                       {citySearchData && citySearchData.data ? (
-                        // weather details container
                         <div className="weather-details-container">
                           {/* details */}
                           <div className="details">
@@ -251,9 +249,9 @@ function App() {
                       <h4 className="extended-forecast-heading">
                         Extended Forecast
                       </h4>
-                      {filteredForecasts.length > 0 ? (
+                      {filteredForecast.length > 0 ? (
                         <div className="extended-forecasts-container">
-                          {filteredForecasts.map((data, index) => {
+                          {filteredForecast.map((data, index) => {
                             const date = new Date(data.dt_txt);
                             const day = date.toLocaleDateString("en-US", {
                               weekday: "short",
@@ -267,7 +265,8 @@ function App() {
                                 />
                                 <h5>{data.weather[0].description}</h5>
                                 <h5 className="min-max-temp">
-                                  {data.main.temp_max}&deg; / {data.main.temp_min}&deg;
+                                  {data.main.temp_max}&deg; /{" "}
+                                  {data.main.temp_min}&deg;
                                 </h5>
                               </div>
                             );

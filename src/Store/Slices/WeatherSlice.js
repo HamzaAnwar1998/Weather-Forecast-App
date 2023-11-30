@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import axios from "axios";
-import { hostName, appId } from "../../../config/config";
+import { appId, hostName } from "../../config/config";
 
 // get city data
 export const getCityData = createAsyncThunk("city", async (obj) => {
@@ -13,15 +13,15 @@ export const getCityData = createAsyncThunk("city", async (obj) => {
       data: response,
       error: null,
     };
-  } catch (err) {
+  } catch (error) {
     return {
       data: null,
-      error: err.response.data.message,
+      error: error.response.data.message,
     };
   }
 });
 
-// get 5 days forecast of the city
+// get 5 days forecast of the provided city
 export const get5DaysForecast = createAsyncThunk("5days", async (obj) => {
   const request = await axios.get(
     `${hostName}/data/2.5/forecast?lat=${obj.lat}&lon=${obj.lon}&units=${obj.unit}&APPID=${appId}`
@@ -33,34 +33,36 @@ export const get5DaysForecast = createAsyncThunk("5days", async (obj) => {
 const weatherSlice = createSlice({
   name: "weather",
   initialState: {
-    citySearchLoader: false,
+    citySearchLoading: false,
     citySearchData: null,
-    forecastLoader: false,
+    forecastLoading: false,
     forecastData: null,
     forecastError: null,
   },
   extraReducers: (builder) => {
     builder
+      // city search
       .addCase(getCityData.pending, (state) => {
-        state.citySearchLoader = true;
+        state.citySearchLoading = true;
         state.citySearchData = null;
       })
       .addCase(getCityData.fulfilled, (state, action) => {
-        state.citySearchLoader = false;
+        state.citySearchLoading = false;
         state.citySearchData = action.payload;
       })
+      // forecast
       .addCase(get5DaysForecast.pending, (state) => {
-        state.forecastLoader = true;
+        state.forecastLoading = true;
         state.forecastData = null;
         state.forecastError = null;
       })
       .addCase(get5DaysForecast.fulfilled, (state, action) => {
-        state.forecastLoader = false;
+        state.forecastLoading = false;
         state.forecastData = action.payload;
         state.forecastError = null;
       })
       .addCase(get5DaysForecast.rejected, (state, action) => {
-        state.forecastLoader = false;
+        state.forecastLoading = false;
         state.forecastData = null;
         state.forecastError = action.error.message;
       });
